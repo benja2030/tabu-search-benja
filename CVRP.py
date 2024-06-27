@@ -71,8 +71,7 @@ def parse_vrp_file(file_path):
                     continue
     return capacity, clients
 
-# Crea una matriz con las distancias euclidiana de los nodos
-# O(n^2)
+# Crea una matriz con las distancias euclidiana de los nodos
 def calculate_distance_matrix(clients):
     num_clients = len(clients)
     distance_matrix = np.zeros((num_clients, num_clients))  # Matriz vacia
@@ -87,8 +86,7 @@ def calculate_distance_matrix(clients):
 
     return distance_matrix
 
-# Calcula la distancia entre el ultimo cliente de la ruta y algun otro cliente
-# O(1)
+# Calcula la distancia entre el ultimo cliente de la ruta y algun otro cliente
 def check_costs(truck, client, dist_matrix, clients):
     if len(truck.route) == 1:
         last_client = clients[0].id-1
@@ -98,8 +96,7 @@ def check_costs(truck, client, dist_matrix, clients):
     # Retorna la distancia hasta un cliente
     return travel_distance
 
-# Crea la solucion inicial
-# O(k*n^2)
+# Crea la solucion inicial
 def create_initial_solution(trucks, clients, dist_matrix):
     # Clientes no visitados
     unvisited_clients = clients[1:]
@@ -124,8 +121,7 @@ def create_initial_solution(trucks, clients, dist_matrix):
             unvisited_clients.remove(best_client)
         truck.route.append(clients[0])
 
-# Calcula la distancia total recorrida por una solucion
-# O(k*n)
+# Calcula la distancia total recorrida por una solucion
 def total_route_cost(solution,dist_matrix):
     traveled_distance = 0
     for route in solution:
