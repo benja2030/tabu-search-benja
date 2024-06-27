@@ -16,7 +16,7 @@ class Trucks:
 
 
 class Clients:
-    def __init__(self, id, x, y, demand, start_time=None, end_time=None, service=None):
+    def __init__(self, id, x, y, demand):
         self.id = id
         self.x = x  # Posicion del cliente
         self.y = y
@@ -30,7 +30,6 @@ def parse_vrp_file(file_path):
     clients = []
     with open(file_path, 'r') as file:
         lines = file.readlines()
-        # Example parsing based on typical format
         node_section = False
         demand_section = False
         depot_section = False
@@ -72,6 +71,8 @@ def parse_vrp_file(file_path):
                     continue
     return capacity, clients
 
+# Crea una matriz con las distancias euclidiana de los nodos
+# O(n^2)
 def calculate_distance_matrix(clients):
     num_clients = len(clients)
     distance_matrix = np.zeros((num_clients, num_clients))  # Matriz vacia
@@ -86,7 +87,9 @@ def calculate_distance_matrix(clients):
 
     return distance_matrix
 
-def check_costs(truck, client, dist_matrix):
+# Calcula la distancia entre el ultimo cliente de la ruta y algun otro cliente
+# O(1)
+def check_costs(truck, client, dist_matrix, clients):
     if len(truck.route) == 1:
         last_client = clients[0].id-1
     else:
@@ -95,6 +98,8 @@ def check_costs(truck, client, dist_matrix):
     # Retorna la distancia hasta un cliente
     return travel_distance
 
+# Crea la solucion inicial
+# O(k*n^2)
 def create_initial_solution(trucks, clients, dist_matrix):
     # Clientes no visitados
     unvisited_clients = clients[1:]
@@ -107,8 +112,7 @@ def create_initial_solution(trucks, clients, dist_matrix):
             best_client = None
             for client in unvisited_clients:
                 if truck.packages + client.demand <= truck.capacity:
-                    current_cost = check_costs(truck, client, dist_matrix)
-                    print(current_cost, best_cost)
+                    current_cost = check_costs(truck, client, dist_matrix, clients)
                     if current_cost < best_cost:
                         best_cost = current_cost
                         best_client = client
@@ -120,6 +124,8 @@ def create_initial_solution(trucks, clients, dist_matrix):
             unvisited_clients.remove(best_client)
         truck.route.append(clients[0])
 
+# Calcula la distancia total recorrida por una solucion
+# O(k*n)
 def total_route_cost(solution,dist_matrix):
     traveled_distance = 0
     for route in solution:
@@ -127,6 +133,8 @@ def total_route_cost(solution,dist_matrix):
             traveled_distance += dist_matrix[route[i].id-1][route[i + 1].id-1]
     return traveled_distance
 
+# Revisa si una solucion es factible
+# O(k*n)
 def is_solution_feasible(solution, capacity):
     for route in solution:
         route_demand = sum(client.demand for client in route)
@@ -134,16 +142,16 @@ def is_solution_feasible(solution, capacity):
             return False
     return True
 
+# Crea una lista de vecinos ordenados
+# La creacion de vecinos se hace a travez del intercambio de nodos entre rutas
+# 
 def create_neighbourhood1(sol, dist_matrix, capacity):
     neighbours = []
     for combo in list(combinations(sol, 2)):
-        #print(combo)
         for i in combo[0][:-1]:
-            #print("!",i)
             for j in combo[1][:-1]:                
                 if i.id == 1 or j.id == 1:
                     continue
-                #print("*",j)
                 temp = [list(item) for item in sol]
                 c0 = list(combo[0])
                 c1 = list(combo[1])
@@ -179,6 +187,9 @@ def create_neighbourhood1(sol, dist_matrix, capacity):
     sorted_neighbours = sorted(neighbours, key=lambda x: x[-1])
     return sorted_neighbours
 
+# Crea una lista de vecinos ordenados
+# La creacion de vecinos se hace a travez del movimiento de nodos de una ruta a otra
+# 
 def create_neighbourhood2(sol, dist_matrix, capacity):
     neighbours = []
     for combo in list(combinations(sol, 2)):
@@ -226,7 +237,7 @@ def tabu_search(solution, dist_matrix, iterations, capacity):
     tabu_list = []
     for i in  range(iterations - 1):
         # Se sale si no hay cambios en la mejor solucion de todo el tiempo
-        if no_change > 10:
+        if no_change > 50:
             print("Exit: No change")
             break
         neighbourhood1 = create_neighbourhood1(best_sol, dist_matrix, capacity)
@@ -270,36 +281,21 @@ def tabu_search(solution, dist_matrix, iterations, capacity):
         print("{0}.Best solution so far {1}, {2}".format(i, best_sol, best_cost))
     return best_solution_ever, best_cost_ever
 
-
-file_path = 'P-n16-k8.vrp'
-capacity, clients = parse_vrp_file(file_path)
-sumDemand = sum(client.demand for client in clients)
-numTrucks = sumDemand//capacity
-trucks = []
-for i in range(numTrucks+3):
-    trucks.append(Trucks(id=i+1, capacity=capacity))
-print(clients,trucks)
-dist_matrix = calculate_distance_matrix(clients)
-print(dist_matrix)
-create_initial_solution(trucks, clients, dist_matrix)
-print(trucks)
-initial_solution = []
-for truck in trucks:
-    initial_solution.append(truck.route)
-initial_cost = total_route_cost(initial_solution, dist_matrix)
-print(initial_solution,initial_cost)
-print(is_solution_feasible(initial_solution, capacity))
-opt_solution, opt_cost = tabu_search(initial_solution, dist_matrix, 100, capacity)
-print(opt_solution,opt_cost)
-# new_solution = [[clients[0],clients[2],clients[0]],
-#                 [clients[0],clients[6],clients[0]],
-#                 [clients[0],clients[8],clients[0]],
-#                 [clients[0],clients[15],clients[12],clients[10],clients[0]],
-#                 [clients[0],clients[14],clients[5],clients[0]],
-#                 [clients[0],clients[13],clients[9],clients[7],clients[0]],
-#                 [clients[0],clients[11],clients[4],clients[0]],
-#                 [clients[0],clients[3],clients[1],clients[0]]
-#                 ]
-# print(new_solution)
-# print(total_route_cost(new_solution, dist_matrix))
+if __name__ == "__main__":
+    file_path = 'Instances\\P-n16-k8.vrp'
+    capacity, clients = parse_vrp_file(file_path)
+    sumDemand = sum(client.demand for client in clients)
+    numTrucks = sumDemand//capacity
+    trucks = []
+    for i in range(numTrucks+3):
+        trucks.append(Trucks(id=i+1, capacity=capacity))
+    dist_matrix = calculate_distance_matrix(clients)
+    create_initial_solution(trucks, clients, dist_matrix)
+    initial_solution = []
+    for truck in trucks:
+        initial_solution.append(truck.route)
+    initial_cost = total_route_cost(initial_solution, dist_matrix)
+    opt_solution, opt_cost = tabu_search(initial_solution, dist_matrix, 500, capacity)
+    print(opt_solution,opt_cost)
+    print(is_solution_feasible(opt_solution,capacity))
 

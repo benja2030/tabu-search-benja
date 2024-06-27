@@ -91,8 +91,8 @@ def is_feasible(truck, client, distance_matrix):
     else:
         last_client = truck.route[-1]
     # Calcula tiempos de viaje
-    travel_time = distance_matrix[last_client.id][client.id]
-    arrival_time = truck.current_time + travel_time
+    travel_distance = distance_matrix[last_client.id][client.id]
+    arrival_time = truck.current_time + travel_distance
 
     # Revisa restricciones de ventanas de tiempo
     if arrival_time > client.end_time:
@@ -111,8 +111,8 @@ def add_client_to_truck(truck, client, distance_matrix):
     else:
         last_client = truck.route[-2]
 
-    travel_time = distance_matrix[last_client.id][client.id]
-    arrival_time = truck.current_time + travel_time
+    travel_distance = distance_matrix[last_client.id][client.id]
+    arrival_time = truck.current_time + travel_distance
 
     # Actualiza el tiempo del camion
     truck.current_time = max(arrival_time, client.start_time) + client.service
@@ -123,23 +123,17 @@ def check_costs(truck, client, dist_matrix):
         last_client = clients[0]
     else:
         last_client = truck.route[-1]
-    print(last_client.id,client.id)
-    travel_time = dist_matrix[last_client.id][client.id]
+    travel_distance = dist_matrix[last_client.id][client.id]
     # Retorna el coste que tiene el viaje hasta un cliente
-    return travel_time + client.service
+    return travel_distance# + client.service
 
 
 def create_initial_solution(trucks, clients, dist_matrix):
-    # Agrega los almacenes a las rutas
-    for truck in trucks:
-        add_client_to_truck(truck, clients[0], dist_matrix)
     # Clientes no visitados
     unvisited_clients = clients[1:]
-    # Variable para revisar si se realizo algun cambio
-    change = False
-
     # Se crean rutas para cada camion
     for truck in trucks:
+        add_client_to_truck(truck, clients[0], dist_matrix)
         # Se agregan clientes mientras que queden clientes sin visitar
         while unvisited_clients:
             best_cost = float("inf")
@@ -148,15 +142,13 @@ def create_initial_solution(trucks, clients, dist_matrix):
                 if is_feasible(truck, client, dist_matrix):
                     current_cost = check_costs(truck, client, dist_matrix)
                     if current_cost < best_cost:
-                        change = True
                         best_cost = current_cost
                         best_client = client
-            if not change:
+            if best_client is None:
                 print(f"Can't add more clients {truck}")
                 break
             add_client_to_truck(truck, best_client, dist_matrix)
             unvisited_clients.remove(best_client)
-            change = False
         add_client_to_truck(truck, clients[0], dist_matrix)
 
 
@@ -179,8 +171,8 @@ def is_route_feasible(route, capacity, dist_matrix):
     current_time = 0
     last_client = route[0]
     for client in route:
-        travel_time = dist_matrix[last_client.id][client.id]
-        arrival_time = current_time + travel_time
+        travel_distance = dist_matrix[last_client.id][client.id]
+        arrival_time = current_time + travel_distance
 
         if arrival_time > client.end_time:
             return False
@@ -199,8 +191,8 @@ def is_solution_feasible(solution, capacity, dist_matrix):
         last_client = route[0]
         counter = 0
         for client in route:
-            travel_time = dist_matrix[last_client.id][client.id]
-            arrival_time = current_time + travel_time
+            travel_distance = dist_matrix[last_client.id][client.id]
+            arrival_time = current_time + travel_distance
             if arrival_time > client.end_time:
                 return False
             current_time = max(arrival_time, client.start_time) + client.service
